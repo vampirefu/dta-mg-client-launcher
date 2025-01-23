@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
-    <TargetFrameworks>net40; net471</TargetFrameworks>
+    <TargetFrameworks>net40</TargetFrameworks>
     <LangVersion>12.0</LangVersion>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
@@ -10,7 +10,7 @@
     <Product>CnCNet Client Launcher</Product>
     <Copyright>Copyright © CnCNet, Rampastring 2011-2024</Copyright>
     <Trademark></Trademark>
-    <AssemblyName>CnCNet.LauncherStub</AssemblyName>
+    <AssemblyName>Glory of the Republic</AssemblyName>
     <RootNamespace>CnCNet.LauncherStub</RootNamespace>
     <ComVisible>false</ComVisible>
     <CLSCompliant>false</CLSCompliant>
@@ -18,11 +18,11 @@
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Platform>AnyCPU</Platform>
-    <ApplicationIcon>mainclienticon.ico</ApplicationIcon>
+    <ApplicationIcon>clienticon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="mainclienticon.ico" />
+    <Content Include="clienticon.ico" />
   </ItemGroup>
 </Project>

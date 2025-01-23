@@ -8,14 +8,18 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Windows;
 using Microsoft.Win32;
 
 internal sealed class Program
 {
     private const string Resources = "Resources";
-    private const int DotNetMajorVersion = 8;
-    private static readonly string DotNetBinariesFolder = $"BinariesNET{DotNetMajorVersion}";
+    /// <summary>
+    /// .net版本
+    /// </summary>
+    private const int DotNetMajorVersion = 7;
+    //private static readonly string DotNetBinariesFolder = $"BinariesNET{DotNetMajorVersion}";
+    private const string DotNetBinariesFolder = "Binaries";
 
     private static bool NetFrameworkEnabled = true;
 
@@ -90,21 +94,9 @@ internal sealed class Program
     {
         try
         {
-            RemoveZoneIdentifer(CurrentDirectory);
-        }
-        catch (Exception ex)
-        {
-            bool ignoreUnblocking = AdvancedMessageBoxHelper.ShowYesNoMessageBox(
-                   "An error occured when the launcher tried to unblock files. Re-running the launcher with administrator privileges might help.\n\n" + ex.ToString(),
-                   "Client Launcher Warning",
-                   yesText: "Continue", noText: "Exit");
+            //启动均用.net7版本
+            NetFrameworkEnabled = false;
 
-            if (!ignoreUnblocking)
-                Environment.Exit(1);
-        }
-
-        try
-        {
             foreach (string arg in args)
             {
                 switch (arg.ToUpperInvariant())
@@ -122,7 +114,7 @@ internal sealed class Program
                         NetFrameworkEnabled = false;
                         RunUGL();
                         return;
-                    case "-NET8":
+                    case "-NET7":
                         NetFrameworkEnabled = false;
                         break;
                     case "-DIALOGTEST":
@@ -132,7 +124,9 @@ internal sealed class Program
             }
 
 #if DEBUG
-            RunDialogTest();
+            MessageBox.Show("233");
+            AutoRun();
+            //RunDialogTest();
 #else
             AutoRun();
 #endif
@@ -179,66 +173,13 @@ internal sealed class Program
         msgbox.ShowDialog();
     }
 
-    private static int RemoveZoneIdentifer_Win32(string filepath)
-    {
-        string zoneIdentifier = filepath + ":Zone.Identifier";
-        bool success = NativeMethods.DeleteFile(zoneIdentifier);
-        if (success)
-            return 0;
-
-        int error = Marshal.GetLastWin32Error();
-        return error;
-    }
-
-    private static void RemoveZoneIdentifer(string directory)
-    {
-        // https://stackoverflow.com/a/6375373
-
-        List<string> failedMessages = [];
-
-        // Enumerate all files recursively
-        string[] files = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
-
-        // For each file, remove the Zone.Identifier alternate data stream
-        foreach (string file in files)
-        {
-            int ret = RemoveZoneIdentifer_Win32(file);
-            if (ret == 0)
-                continue;
-
-            // If the file doesn't exist, ignore it
-            if (ret == NativeConstants.ERROR_FILE_NOT_FOUND)
-                continue;
-
-            // Try again, but temporarily remove the read-only attribute
-            if (ret == NativeConstants.ERROR_ACCESS_DENIED)
-            {
-                FileInfo info = new(file);
-                if (info.IsReadOnly)
-                {
-                    info.IsReadOnly = false;
-                    ret = RemoveZoneIdentifer_Win32(file);
-                    info.IsReadOnly = true;
-                    if (ret == 0)
-                        continue;
-                }
-            }
-
-            string errorMessage = new Win32Exception(ret).Message;
-            failedMessages.Add($"{file}: {errorMessage}");
-        }
-
-        if (failedMessages.Count > 0)
-            throw new Exception("Failed to remove Zone.Identifier from the following files:\n" + string.Join("\n", failedMessages));
-    }
-
     private static void RunXNA()
     {
         RequireXna();
         if (NetFrameworkEnabled)
             StartProcessNetFramework(Resources + Path.DirectorySeparatorChar + "clientxna.exe");
         else
-            StartProcessDotNet(Resources + Path.DirectorySeparatorChar + DotNetBinariesFolder + Path.DirectorySeparatorChar + "XNA" + Path.DirectorySeparatorChar + "clientxna.dll", run32Bit: true, runDesktop: true);
+            StartProcessDotNet($"{Resources}{Path.DirectorySeparatorChar}{DotNetBinariesFolder}{Path.DirectorySeparatorChar}XNA{Path.DirectorySeparatorChar}clientxna.dll", run32Bit: true, runDesktop: true);
     }
 
     private static void RunOGL()
@@ -246,7 +187,7 @@ internal sealed class Program
         if (NetFrameworkEnabled)
             StartProcessNetFramework(Resources + Path.DirectorySeparatorChar + "clientogl.exe");
         else
-            StartProcessDotNet(Resources + Path.DirectorySeparatorChar + DotNetBinariesFolder + Path.DirectorySeparatorChar + "OpenGL" + Path.DirectorySeparatorChar + "clientogl.dll", run32Bit: false, runDesktop: true);
+            StartProcessDotNet($"{Resources}{Path.DirectorySeparatorChar}{DotNetBinariesFolder}{Path.DirectorySeparatorChar}OpenGL{Path.DirectorySeparatorChar}clientogl.dll", run32Bit: false, runDesktop: true);
     }
 
     private static void RunDX()
@@ -254,14 +195,14 @@ internal sealed class Program
         if (NetFrameworkEnabled)
             StartProcessNetFramework(Resources + Path.DirectorySeparatorChar + "clientdx.exe");
         else
-            StartProcessDotNet(Resources + Path.DirectorySeparatorChar + DotNetBinariesFolder + Path.DirectorySeparatorChar + "Windows" + Path.DirectorySeparatorChar + "clientdx.dll", run32Bit: false, runDesktop: true);
+            StartProcessDotNet($"{Resources}{Path.DirectorySeparatorChar}{DotNetBinariesFolder}{Path.DirectorySeparatorChar}Windows{Path.DirectorySeparatorChar}clientdx.dll", run32Bit: false, runDesktop: true);
     }
 
     private static void RunUGL()
     {
         Debug.Assert(!NetFrameworkEnabled);
         NetFrameworkEnabled = false;
-        StartProcessDotNet(Resources + Path.DirectorySeparatorChar + DotNetBinariesFolder + Path.DirectorySeparatorChar + "UniversalGL" + Path.DirectorySeparatorChar + "clientogl.dll", run32Bit: false, runDesktop: false);
+        StartProcessDotNet($"{Resources}{Path.DirectorySeparatorChar}{DotNetBinariesFolder}{Path.DirectorySeparatorChar}UniversalGL{Path.DirectorySeparatorChar}clientogl.dll", run32Bit: false, runDesktop: false);
     }
 
     public enum OSVersion
@@ -355,7 +296,7 @@ internal sealed class Program
 
     private static void W7And10Autorun()
     {
-        string basePath = CurrentDirectory + Path.DirectorySeparatorChar + "Client" + Path.DirectorySeparatorChar;
+        string basePath = $"{CurrentDirectory}{Path.DirectorySeparatorChar}Client{Path.DirectorySeparatorChar}";
         string dxFailFilePath = basePath + ".dxfail";
         string oglFailFilePath = basePath + ".oglfail";
 
