@@ -10,7 +10,7 @@
     <Product>CnCNet Client Launcher</Product>
     <Copyright>Copyright © CnCNet, Rampastring 2011-2024</Copyright>
     <Trademark></Trademark>
-    <AssemblyName>Glory of the Republic</AssemblyName>
+    <AssemblyName>AI's Revenge</AssemblyName>
     <RootNamespace>CnCNet.LauncherStub</RootNamespace>
     <ComVisible>false</ComVisible>
     <CLSCompliant>false</CLSCompliant>
@@ -22,7 +22,4 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
-  <ItemGroup>
-    <Content Include="clienticon.ico" />
-  </ItemGroup>
 </Project>
