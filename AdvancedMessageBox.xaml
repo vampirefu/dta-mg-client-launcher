@@ -1,4 +1,4 @@
-﻿<Window x:Class="CnCNet.LauncherStub.AdvancedMessageBox"
+<Window x:Class="CnCNet.LauncherStub.AdvancedMessageBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:CnCNet.LauncherStub"
     mc:Ignorable="d"
     Title="{Binding Title}"
-    d:Title="Message title goes here"
+    d:Title="消息标题"
     SizeToContent="WidthAndHeight"
     Height="200" MaxHeight="600"
     Width="350" MinWidth="300" MaxWidth="800"
@@ -19,7 +19,6 @@
         <DockPanel LastChildFill="True">
             <StackPanel DockPanel.Dock="Bottom" Margin="10,0,10,10">
                 <ItemsControl ItemsSource="{Binding Commands}">
-                    <!-- https://stackoverflow.com/a/68096372/7774607 -->
                     <d:ItemsControl.ItemsSource>
                         <x:Array Type="{x:Type local:CommandViewModel}">
                             <local:CommandViewModel />
@@ -30,14 +29,14 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Margin="0,5,0,5" Content="{Binding Text}"
-                                d:Content="Button text here"
+                                d:Content="按钮文本"
                                 Command="{Binding Command}" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
             <TextBlock DockPanel.Dock="Top" Margin="10" Text="{Binding Message}"
-                d:Text="Message text goes here."
+                d:Text="消息内容"
                 TextWrapping="Wrap" />
         </DockPanel>
     </ScrollViewer>
