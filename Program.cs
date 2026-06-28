@@ -1,4 +1,4 @@
-﻿﻿namespace CnCNet.LauncherStub;
+namespace CnCNet.LauncherStub;
 
 using System;
 using System.Collections.ObjectModel;
@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 /// <summary>
 /// CnCNet 客户端启动器主程序。
-/// 负责检测运行环境（.NET 运行时、XNA Framework）、选择渲染模式并启动客户端
+/// 负责检测运行环境（.NET 运行时）并启动 WindowsDX 客户端
 /// </summary>
 internal sealed class Program
 {
@@ -26,6 +26,16 @@ internal sealed class Program
     private const string DotNetBinariesFolder = "Binaries";
 
     /// <summary>
+    /// 客户端 DLL 所在的渲染子目录名
+    /// </summary>
+    private const string RenderFolder = "Windows";
+
+    /// <summary>
+    /// 客户端 DLL 文件名
+    /// </summary>
+    private const string ClientDllName = "clientdx.dll";
+
+    /// <summary>
     /// 启动器自身所在目录的完整路径
     /// </summary>
     private static readonly string CurrentDirectory = new FileInfo(Assembly.GetEntryAssembly().Location).Directory.FullName;
@@ -35,37 +45,19 @@ internal sealed class Program
     /// </summary>
     public static OSVersion CurrentOSVersion { get; } = GetOperatingSystemVersion();
 
-    /// <summary>XNA Framework 4.0 Refresh 下载链接</summary>
-    private static readonly Uri XnaDownloadLink = new("https://www.microsoft.com/download/details.aspx?id=27598");
-
     #region .NET 下载链接
     private static readonly Uri DotNetDownloadLink = new("https://dotnet.microsoft.com/download");
     private static readonly Uri DotNetX64DesktopRuntimeDownloadLink = new($"https://aka.ms/dotnet/{DotNetMajorVersion}.0/windowsdesktop-runtime-win-x64.exe");
     private static readonly Uri DotNetX86DesktopRuntimeDownloadLink = new($"https://aka.ms/dotnet/{DotNetMajorVersion}.0/windowsdesktop-runtime-win-x86.exe");
     private static readonly Uri DotNetArm64DesktopRuntimeDownloadLink = new($"https://aka.ms/dotnet/{DotNetMajorVersion}.0/windowsdesktop-runtime-win-arm64.exe");
-    private static readonly Uri DotNetX64RuntimeDownloadLink = new($"https://aka.ms/dotnet/{DotNetMajorVersion}.0/dotnet-runtime-win-x64.exe");
-    private static readonly Uri DotNetX86RuntimeDownloadLink = new($"https://aka.ms/dotnet/{DotNetMajorVersion}.0/dotnet-runtime-win-x86.exe");
-    private static readonly Uri DotNetArm64RuntimeDownloadLink = new($"https://aka.ms/dotnet/{DotNetMajorVersion}.0/dotnet-runtime-win-arm64.exe");
     #endregion
-
-    /// <summary>
-    /// 检查 XNA Framework 4.0 Refresh 是否已安装，未安装则提示下载并退出
-    /// </summary>
-    private static void RequireXna()
-    {
-        if (!IsXNAFramework4RefreshInstalled())
-        {
-            ShowMissingComponent("'Microsoft XNA Framework 4.0 Refresh'", XnaDownloadLink);
-            Environment.Exit(2);
-        }
-    }
 
     [STAThread]
     private static void Main(string[] args)
     {
         try
         {
-            // 解析命令行参数，决定以哪种渲染模式启动客户端
+            // 解析命令行参数
             foreach (string arg in args)
             {
                 switch (arg.ToUpperInvariant())
@@ -73,26 +65,14 @@ internal sealed class Program
                     case "-DX":
                         RunDX();
                         return;
-                    case "-XNA":
-                        RunXNA();
-                        return;
-                    case "-OGL":
-                        RunOGL();
-                        return;
-                    case "-UGL":
-                        RunUGL();
-                        return;
                     case "-DIALOGTEST":
                         RunDialogTest();
                         return;
                 }
             }
 
-#if DEBUG
-            MessageBox.Show("233");
-#endif
-            // 无参数时自动选择渲染模式
-            AutoRun();
+            // 无参数时直接启动 DX 版本
+            RunDX();
         }
         catch (Exception ex)
         {
@@ -114,11 +94,6 @@ internal sealed class Program
         {
             new CommandViewModel()
             {
-                Text = "显示 GPU 不兼容对话框",
-                Command = new RelayCommand(_ => ShowIncompatibleGPUMessage(new[] { "打开链接（以下按钮均不可用）", "启动 XNA 版本", "启动 DirectX11 版本", "退出" })),
-            },
-            new CommandViewModel()
-            {
                 Text = "显示缺失组件对话框",
                 Command = new RelayCommand(_ => ShowMissingComponent("组件名称", new Uri("https://github.com/CnCNet/dta-mg-client-launcher"))),
             },
@@ -137,43 +112,18 @@ internal sealed class Program
     }
 
     /// <summary>
-    /// 以 XNA 渲染模式启动客户端（需要 XNA Framework 4.0 Refresh，32位，需要桌面运行时）
-    /// </summary>
-    private static void RunXNA()
-    {
-        RequireXna();
-        StartProcessDotNet(BuildDllPath("XNA", "clientxna.dll"), run32Bit: true, runDesktop: true);
-    }
-
-    /// <summary>
-    /// 以 OpenGL 渲染模式启动客户端（64位，需要桌面运行时）
-    /// </summary>
-    private static void RunOGL()
-    {
-        StartProcessDotNet(BuildDllPath("OpenGL", "clientogl.dll"), run32Bit: false, runDesktop: true);
-    }
-
-    /// <summary>
     /// 以 DirectX11 渲染模式启动客户端（64位，需要桌面运行时）
     /// </summary>
     private static void RunDX()
     {
-        StartProcessDotNet(BuildDllPath("Windows", "clientdx.dll"), run32Bit: false, runDesktop: true);
+        StartProcessDotNet(BuildDllPath(ClientDllName));
     }
 
     /// <summary>
-    /// 以 UniversalGL 渲染模式启动客户端（64位，不需要桌面运行时）
+    /// 拼接客户端 DLL 的相对路径：Resources\Binaries\Windows\clientdx.dll
     /// </summary>
-    private static void RunUGL()
-    {
-        StartProcessDotNet(BuildDllPath("UniversalGL", "clientogl.dll"), run32Bit: false, runDesktop: false);
-    }
-
-    /// <summary>
-    /// 拼接客户端 DLL 的相对路径：Resources\Binaries\{renderFolder}\{dllName}
-    /// </summary>
-    private static string BuildDllPath(string renderFolder, string dllName)
-        => $"Resources{Path.DirectorySeparatorChar}{DotNetBinariesFolder}{Path.DirectorySeparatorChar}{renderFolder}{Path.DirectorySeparatorChar}{dllName}";
+    private static string BuildDllPath(string dllName)
+        => $"Resources{Path.DirectorySeparatorChar}{DotNetBinariesFolder}{Path.DirectorySeparatorChar}{RenderFolder}{Path.DirectorySeparatorChar}{dllName}";
 
     /// <summary>
     /// 拼接当前目录下的绝对路径
@@ -221,104 +171,16 @@ internal sealed class Program
     }
 
     /// <summary>
-    /// 显示 GPU 不兼容提示对话框，返回用户选择的按钮索引
-    /// </summary>
-    private static int? ShowIncompatibleGPUMessage(string[] selections) => AdvancedMessageBox.ShowMessageBoxWithSelection(
-            string.Format(
-                "客户端检测到您的显卡与 DirectX11 和 OpenGL 版本的 CnCNet 客户端均不兼容。\n\n" +
-                "XNA 版本的客户端可能仍可在您的系统上运行，但需要安装\nMicrosoft XNA Framework 4.0 Refresh。\n\n" +
-                "您可以从以下链接下载安装程序：\n\n" +
-                "{0}\n\n" +
-                "或者，您可以重新尝试启动 DirectX11 版本的客户端。\n\n" +
-                "对此造成的不便，我们深表歉意。", XnaDownloadLink.ToString()),
-            "检测到显卡不兼容",
-            selections);
-
-    /// <summary>
-    /// 无参数启动时自动选择渲染模式：
-    /// Win7/8/10+ 走智能选择逻辑，旧系统直接走 OpenGL
-    /// </summary>
-    private static void AutoRun()
-    {
-        if (CurrentOSVersion == OSVersion.LEGACY)
-        {
-            RunOGL();
-            return;
-        }
-
-        W7And10Autorun();
-    }
-
-    /// <summary>
-    /// Win7 及以上系统的智能启动逻辑：
-    /// 优先尝试 DX，DX 失败则尝试 OpenGL，两者都失败则回退 XNA 或提示不兼容。
-    /// 通过 Client 目录下的 .dxfail / .oglfail 标记文件判断之前是否启动失败
-    /// </summary>
-    private static void W7And10Autorun()
-    {
-        string basePath = ToAbsolutePath($"Client{Path.DirectorySeparatorChar}");
-        string dxFailFilePath = basePath + ".dxfail";
-        string oglFailFilePath = basePath + ".oglfail";
-
-        if (File.Exists(dxFailFilePath))
-        {
-            // DX 之前失败过
-            if (File.Exists(oglFailFilePath))
-            {
-                // DX 和 OpenGL 都失败过，尝试 XNA 回退
-                if (IsXNAFramework4RefreshInstalled())
-                {
-                    RunXNA();
-                    return;
-                }
-
-                // XNA 也没装，显示 GPU 不兼容对话框
-                int? result = ShowIncompatibleGPUMessage(["打开链接", "启动 XNA 版本", "启动 DirectX11 版本", "退出"]);
-                switch (result)
-                {
-                    case 0:
-                        OpenUri(XnaDownloadLink);
-                        return;
-                    case 1:
-                        RunXNA();
-                        return;
-                    case 2:
-                        // 清除失败标记，重新尝试 DX
-                        File.Delete(dxFailFilePath);
-                        File.Delete(oglFailFilePath);
-                        AutoRun();
-                        return;
-                    default:
-                        Environment.Exit(4);
-                        return;
-                }
-            }
-
-            // 仅 DX 失败，走 OpenGL
-            RunOGL();
-            return;
-        }
-
-        // 优先尝试 DX
-        RunDX();
-    }
-
-    /// <summary>
     /// 使用 .NET 运行时启动指定路径的客户端 DLL
     /// </summary>
     /// <param name="relativePath">客户端 DLL 的相对路径</param>
-    /// <param name="run32Bit">是否强制 32 位运行</param>
-    /// <param name="runDesktop">是否需要 .NET Desktop Runtime（WPF/WinForms 应用需要）</param>
-    private static void StartProcessDotNet(string relativePath, bool run32Bit = false, bool runDesktop = true)
+    private static void StartProcessDotNet(string relativePath)
     {
-        // 32位系统强制使用 x86 运行时
-        if (!Environment.Is64BitOperatingSystem)
-            run32Bit = true;
-
+        bool run32Bit = !Environment.Is64BitOperatingSystem;
         string architecture = run32Bit ? "x86" : GetMachineArchitecture();
 
         // 检查 .NET 运行时是否已安装，获取 dotnet host 路径
-        string dotnetHost = CheckAndRetrieveDotNetHost(architecture, runDesktop);
+        string dotnetHost = CheckAndRetrieveDotNetHost(architecture);
         string absolutePath = ToAbsolutePath(relativePath);
 
         if (!File.Exists(absolutePath))
@@ -365,21 +227,18 @@ internal sealed class Program
     }
 
     /// <summary>
-    /// 检查指定架构的 .NET 运行时是否已安装，返回 dotnet host 的完整路径；
+    /// 检查指定架构的 .NET Desktop Runtime 是否已安装，返回 dotnet host 的完整路径；
     /// 未安装则提示下载并退出程序
     /// </summary>
-    private static string CheckAndRetrieveDotNetHost(string architecture, bool runDesktop)
+    private static string CheckAndRetrieveDotNetHost(string architecture)
     {
-        // 同时检查 Core Runtime 和 Desktop Runtime（如果需要）
-        bool installed = IsDotNetCoreInstalled(architecture)
-            && (!runDesktop || IsDotNetDesktopInstalled(architecture));
+        // DX 版本始终需要 Desktop Runtime
+        bool installed = IsDotNetDesktopInstalled(architecture);
 
         if (!installed)
         {
-            string missingComponent = runDesktop
-                ? $".NET Desktop Runtime 版本 {DotNetMajorVersion}（架构：{architecture}）"
-                : $".NET Runtime 版本 {DotNetMajorVersion}（架构：{architecture}）";
-            ShowMissingComponent(missingComponent, GetDotNetDownloadLink(architecture, runDesktop));
+            string missingComponent = $".NET Desktop Runtime 版本 {DotNetMajorVersion}（架构：{architecture}）";
+            ShowMissingComponent(missingComponent, GetDotNetDownloadLink(architecture));
             Environment.Exit(2);
             return null;
         }
@@ -407,15 +266,15 @@ internal sealed class Program
         => System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
 
     /// <summary>
-    /// 根据架构和是否需要 Desktop Runtime 返回对应的下载链接
+    /// 根据架构返回对应的 Desktop Runtime 下载链接
     /// </summary>
-    private static Uri GetDotNetDownloadLink(string architecture, bool runDesktop)
+    private static Uri GetDotNetDownloadLink(string architecture)
     {
         return architecture.ToLowerInvariant() switch
         {
-            "x64" => runDesktop ? DotNetX64DesktopRuntimeDownloadLink : DotNetX64RuntimeDownloadLink,
-            "x86" => runDesktop ? DotNetX86DesktopRuntimeDownloadLink : DotNetX86RuntimeDownloadLink,
-            "arm64" => runDesktop ? DotNetArm64DesktopRuntimeDownloadLink : DotNetArm64RuntimeDownloadLink,
+            "x64" => DotNetX64DesktopRuntimeDownloadLink,
+            "x86" => DotNetX86DesktopRuntimeDownloadLink,
+            "arm64" => DotNetArm64DesktopRuntimeDownloadLink,
             _ => DotNetDownloadLink,
         };
     }
@@ -448,23 +307,6 @@ internal sealed class Program
         if (dialogResult)
             OpenUri(downloadLink);
     }
-
-    /// <summary>
-    /// 通过注册表检查 XNA Framework 4.0 Refresh 是否已安装
-    /// </summary>
-    private static bool IsXNAFramework4RefreshInstalled()
-    {
-        using var localMachine32BitRegistryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
-        using RegistryKey? xnaKey = localMachine32BitRegistryKey.OpenSubKey("SOFTWARE\\Microsoft\\XNA\\Framework\\v4.0");
-
-        return "1".Equals(xnaKey?.GetValue("Refresh1Installed")?.ToString(), StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// 检查指定架构的 .NET Core Runtime 是否已安装
-    /// </summary>
-    private static bool IsDotNetCoreInstalled(string architecture)
-        => IsDotNetInstalled(architecture, "Microsoft.NETCore.App");
 
     /// <summary>
     /// 检查指定架构的 .NET Desktop Runtime 是否已安装
