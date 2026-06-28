@@ -29,7 +29,7 @@
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <PropertyGroup>
-      <DeployDir>C:\Users\Vampire\Desktop\AGWarDTA</DeployDir>
+      <DeployDir>C:\Users\Vampire\Desktop\AGWar1.3.0</DeployDir>
     </PropertyGroup>
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployDir)" SkipUnchangedFiles="true" Condition="Exists('$(DeployDir)')" />
   </Target>
